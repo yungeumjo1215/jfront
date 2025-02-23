@@ -82,33 +82,28 @@ const AttendanceList = () => {
   };
 
   const handleExcelDownload = () => {
-    // 엑셀 데이터 준비
     const excelData = attendanceList.map(record => ({
       날짜: record.date,
       시간: record.time,
       이름: record.memberName,
-      전화번호: record.phoneNumber
+      전화번호: record.phoneNumber,
+      운동종류: record.exerciseType
     }));
 
-    // 워크북 생성
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(excelData);
 
-    // 열 너비 설정
     const columnWidths = [
       { wch: 15 },  // 날짜
       { wch: 10 },  // 시간
       { wch: 10 },  // 이름
-      { wch: 15 }   // 전화번호
+      { wch: 15 },  // 전화번호
+      { wch: 10 }   // 운동종류
     ];
     ws['!cols'] = columnWidths;
 
-    // 워크북에 시트 추가
     XLSX.utils.book_append_sheet(wb, ws, "출석기록");
-
-    // 파일 저장
-    const fileName = `${company?.name}_출석기록_${new Date().toLocaleDateString()}.xlsx`;
-    XLSX.writeFile(wb, fileName);
+    XLSX.writeFile(wb, `${company?.name}_출석기록_${new Date().toLocaleDateString()}.xlsx`);
   };
 
   if (!company) {
@@ -139,6 +134,9 @@ const AttendanceList = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     전화번호
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    운동종류
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -155,6 +153,9 @@ const AttendanceList = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {record.phoneNumber}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {record.exerciseType}
                     </td>
                   </tr>
                 ))}

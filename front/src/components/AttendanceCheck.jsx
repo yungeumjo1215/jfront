@@ -11,6 +11,7 @@ const AttendanceCheck = () => {
   
   const [phoneLastDigits, setPhoneLastDigits] = useState("");
   const [message, setMessage] = useState("");
+  const [exerciseType, setExerciseType] = useState("");
   
   const members = useSelector(selectMembers).filter(
     member => member.companyId === parseInt(companyId)
@@ -25,6 +26,11 @@ const AttendanceCheck = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     
+    if (!exerciseType) {
+      setMessage("운동 종류를 선택해주세요.");
+      return;
+    }
+
     const member = members.find(m => m.phoneNumber.slice(-4) === phoneLastDigits);
     
     if (member) {
@@ -40,18 +46,21 @@ const AttendanceCheck = () => {
         return;
       }
 
-      dispatch(addAttendance({
-        companyId: parseInt(companyId),
-        companyName: company?.name,
+      const now = new Date();
+      const attendance = {
         memberId: member.id,
         memberName: member.name,
         phoneNumber: member.phoneNumber,
-        date: today,
-        time: new Date().toLocaleTimeString()
-      }));
+        companyId: parseInt(companyId),
+        date: now.toLocaleDateString(),
+        time: now.toLocaleTimeString(),
+        exerciseType: exerciseType
+      };
       
+      dispatch(addAttendance(attendance));
       setMessage(`${member.name}님 출석이 완료되었습니다!`);
       setPhoneLastDigits("");
+      setExerciseType("");
       
       setTimeout(() => {
         setMessage("");
@@ -62,124 +71,88 @@ const AttendanceCheck = () => {
   };
 
   return (
-    <div style={{
-      marginTop: "64px",
-      padding: "20px",
-      maxWidth: "600px",
-      margin: "0 auto"
-    }}>
-      <h1 style={{
-        fontSize: "32px",
-        fontWeight: "bold",
-        textAlign: "center",
-        marginBottom: "30px",
-        color: "#333"
-      }}>{company?.name} 출석체크</h1>
-      
-      <form onSubmit={handleSubmit} style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "20px"
-      }}>
-        <div style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "8px"
-        }}>
-          <label style={{
-            fontSize: "16px",
-            fontWeight: "500",
-            color: "#444"
-          }}>핸드폰 번호 뒤 4자리</label>
-          <input
-            type="text"
-            value={phoneLastDigits}
-            onChange={(e) => {
-              const value = e.target.value.replace(/[^0-9]/g, '');
-              if (value.length <= 4) {
-                setPhoneLastDigits(value);
-              }
-            }}
-            placeholder="0000"
-            maxLength="4"
-            style={{
-              padding: "12px",
-              fontSize: "24px",
-              borderRadius: "5px",
-              border: "1px solid #ccc",
-              textAlign: "center",
-              letterSpacing: "8px"
-            }}
-            required
-          />
-        </div>
-
-        {message && (
-          <div style={{
-            padding: "12px",
-            borderRadius: "5px",
-            backgroundColor: message.includes("완료") ? "#4CAF50" : "#f44336",
-            color: "white",
-            textAlign: "center"
-          }}>
-            {message}
+    <div className="min-h-screen bg-gray-100 py-12 px-4 pt-20">
+      <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
+        <h2 className="text-2xl font-bold text-center mb-6">출석체크</h2>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* 운동 종류 선택 */}
+          <div>
+            <label className="block text-gray-700 mb-2">운동 종류</label>
+            <div className="flex gap-4">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  value="헬스"
+                  checked={exerciseType === "헬스"}
+                  onChange={(e) => setExerciseType(e.target.value)}
+                  className="mr-2"
+                />
+                헬스
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  value="골프"
+                  checked={exerciseType === "골프"}
+                  onChange={(e) => setExerciseType(e.target.value)}
+                  className="mr-2"
+                />
+                골프
+              </label>
+            </div>
           </div>
-        )}
 
-        <div style={{
-          display: "flex",
-          gap: "10px",
-          justifyContent: "center"
-        }}>
-          <button
-            type="submit"
-            style={{
-              padding: "12px 24px",
-              backgroundColor: "#4CAF50",
-              color: "white",
-              border: "none",
-              borderRadius: "5px",
-              cursor: "pointer",
-              fontSize: "16px",
-              fontWeight: "bold"
-            }}
-          >
-            출석체크
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate(`/company/${companyId}/attendance`)}
-            style={{
-              padding: "12px 24px",
-              backgroundColor: "#2196F3",
-              color: "white",
-              border: "none",
-              borderRadius: "5px",
-              cursor: "pointer",
-              fontSize: "16px",
-              fontWeight: "bold"
-            }}
-          >
-            출석 목록
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            style={{
-              padding: "12px 24px",
-              backgroundColor: "#f44336",
-              color: "white",
-              border: "none",
-              borderRadius: "5px",
-              cursor: "pointer",
-              fontSize: "16px",
-              fontWeight: "bold"
-            }}
-          >
-            홈으로
-          </button>
-        </div>
-      </form>
+          <div>
+            <label className="block text-gray-700 mb-2">전화번호 뒤 4자리</label>
+            <input
+              type="text"
+              value={phoneLastDigits}
+              onChange={(e) => {
+                const value = e.target.value.replace(/[^0-9]/g, '');
+                if (value.length <= 4) {
+                  setPhoneLastDigits(value);
+                }
+              }}
+              className="w-full p-2 border rounded"
+              maxLength="4"
+              pattern="\d{4}"
+              required
+            />
+          </div>
+
+          {message && (
+            <div className={`text-center ${
+              message.includes("완료") ? "text-green-600" : "text-red-600"
+            }`}>
+              {message}
+            </div>
+          )}
+
+          <div className="flex justify-center space-x-4">
+            <button
+              type="submit"
+              className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              출석체크
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(`/company/${companyId}/attendance`)}
+              className="px-6 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+            >
+              출석목록
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/')}
+              className="px-6 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+            >
+              홈으로
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
