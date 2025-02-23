@@ -9,7 +9,7 @@ import {
   MenuIcon,
   XIcon,
 } from "lucide-react";
-import logo_w from "../assets/logo_w.png";
+import logo_box_w from "../assets/logo_box_w.png";
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -157,7 +157,7 @@ const Navbar = () => {
           <div className="flex items-center">
             <Link to="/" className="flex-shrink-0 flex items-center">
               <img
-                src={logo_w}
+                src={logo_box_w}
                 alt="Logo"
                 className="h-16 w-16 md:h-20 md:w-20 mr-1"
               />
