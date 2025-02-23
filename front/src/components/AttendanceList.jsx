@@ -83,9 +83,9 @@ const AttendanceList = () => {
     };
   };
 
-  const handleDelete = (recordId) => {
-    if (window.confirm('정말로 이 출석 기록을 삭제하시겠습니까?')) {
-      dispatch(deleteAttendance(recordId));
+  const handleDelete = (recordToDelete) => {
+    if (window.confirm(`${recordToDelete.memberName}님의 ${recordToDelete.date} ${recordToDelete.time} 출석 기록을 삭제하시겠습니까?`)) {
+      dispatch(deleteAttendance(recordToDelete.id));
     }
   };
 
@@ -147,25 +147,15 @@ const AttendanceList = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {attendanceList.map((record) => (
-                  <tr key={record.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {record.date}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {record.time}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {record.memberName}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {record.phoneNumber}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {record.exerciseType}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <tr key={record.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4">{record.date}</td>
+                    <td className="px-6 py-4">{record.time}</td>
+                    <td className="px-6 py-4">{record.memberName}</td>
+                    <td className="px-6 py-4">{record.phoneNumber}</td>
+                    <td className="px-6 py-4">{record.exerciseType}</td>
+                    <td className="px-6 py-4">
                       <button
-                        onClick={() => handleDelete(record.id)}
+                        onClick={() => handleDelete(record)}
                         className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
                       >
                         삭제

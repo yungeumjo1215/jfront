@@ -17,6 +17,7 @@ export const createAttendance = createAsyncThunk(
   }
 );
 
+// 로컬 스토리지에서 출석 데이터 불러오기
 const loadAttendance = () => {
   try {
     const savedAttendance = localStorage.getItem('attendance');
@@ -30,40 +31,22 @@ const loadAttendance = () => {
 const attendanceSlice = createSlice({
   name: 'attendance',
   initialState: {
-    attendanceList: loadAttendance(),
-    previousStates: []  // 이전 상태를 저장할 배열
+    attendanceList: loadAttendance()
   },
   reducers: {
     addAttendance: (state, action) => {
-      // 현재 상태를 이전 상태 배열에 저장
-      state.previousStates.push([...state.attendanceList]);
-      state.attendanceList.push(action.payload);
+      const newAttendance = {
+        ...action.payload,
+        id: Date.now().toString() // 고유 ID 생성
+      };
+      state.attendanceList.push(newAttendance);
       localStorage.setItem('attendance', JSON.stringify(state.attendanceList));
-    },
-    updateAttendance: (state, action) => {
-      const index = state.attendanceList.findIndex(record => record.id === action.payload.id);
-      if (index !== -1) {
-        // 현재 상태를 이전 상태 배열에 저장
-        state.previousStates.push([...state.attendanceList]);
-        state.attendanceList[index] = {
-          ...state.attendanceList[index],
-          ...action.payload
-        };
-        localStorage.setItem('attendance', JSON.stringify(state.attendanceList));
-      }
     },
     deleteAttendance: (state, action) => {
-      // 현재 상태를 이전 상태 배열에 저장
-      state.previousStates.push([...state.attendanceList]);
+      // action.payload는 삭제할 출석 기록의 ID
       state.attendanceList = state.attendanceList.filter(record => record.id !== action.payload);
+      // 변경된 목록을 로컬 스토리지에 저장
       localStorage.setItem('attendance', JSON.stringify(state.attendanceList));
-    },
-    undoAction: (state) => {
-      if (state.previousStates.length > 0) {
-        // 마지막 이전 상태를 현재 상태로 복원
-        state.attendanceList = state.previousStates.pop();
-        localStorage.setItem('attendance', JSON.stringify(state.attendanceList));
-      }
     }
   },
   extraReducers: (builder) => {
@@ -86,5 +69,5 @@ const attendanceSlice = createSlice({
   }
 });
 
-export const { addAttendance, updateAttendance, deleteAttendance, undoAction } = attendanceSlice.actions;
+export const { addAttendance, deleteAttendance } = attendanceSlice.actions;
 export default attendanceSlice.reducer; 
