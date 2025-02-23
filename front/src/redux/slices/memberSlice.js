@@ -1,29 +1,43 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-const initialState = {
-  membersList: []
+const loadMembers = () => {
+  try {
+    const savedMembers = localStorage.getItem('members');
+    return savedMembers ? JSON.parse(savedMembers) : [];
+  } catch (err) {
+    console.error('Error loading members:', err);
+    return [];
+  }
 };
 
 const memberSlice = createSlice({
   name: 'members',
-  initialState,
+  initialState: {
+    membersList: loadMembers()
+  },
   reducers: {
     addMember: (state, action) => {
-      // 배열이 없으면 초기화
-      if (!state.membersList) {
-        state.membersList = [];
+      state.membersList.push(action.payload);
+      localStorage.setItem('members', JSON.stringify(state.membersList));
+    },
+    updateMember: (state, action) => {
+      const index = state.membersList.findIndex(member => member.id === action.payload.id);
+      if (index !== -1) {
+        state.membersList[index] = {
+          ...state.membersList[index],
+          ...action.payload
+        };
+        localStorage.setItem('members', JSON.stringify(state.membersList));
       }
-      // 새 멤버 추가
-      state.membersList.push({
-        id: Date.now(),
-        ...action.payload,
-        registrationDate: new Date().toISOString()
-      });
+    },
+    deleteMember: (state, action) => {
+      state.membersList = state.membersList.filter(member => member.id !== action.payload);
+      localStorage.setItem('members', JSON.stringify(state.membersList));
     }
   }
 });
 
-export const { addMember } = memberSlice.actions;
+export const { addMember, updateMember, deleteMember } = memberSlice.actions;
 
 // 안전한 selector
 export const selectMembers = (state) => {
