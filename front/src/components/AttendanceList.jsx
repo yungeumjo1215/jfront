@@ -13,15 +13,41 @@ const AttendanceList = () => {
     state.companies.companies.find(c => c.id === Number(companyId))
   );
   
-  const attendanceList = useSelector(state => 
-    state.attendance.attendanceList
-      .filter(a => a.companyId === Number(companyId))
-      .sort((a, b) => {
-        const dateA = new Date(`${a.date} ${a.time}`);
-        const dateB = new Date(`${b.date} ${b.time}`);
-        return dateB - dateA;
-      })
-  );
+  const attendanceByDate = useSelector(state => {
+    const list = state.attendance.attendanceList.filter(a => 
+      a.companyId === Number(companyId)
+    );
+
+    const grouped = list.reduce((acc, record) => {
+      const key = `${record.date}-${record.exerciseType}`;
+      if (!acc[key]) {
+        acc[key] = [];
+      }
+      acc[key].push(record);
+      return acc;
+    }, {});
+
+    const withExceeded = list.map(record => {
+      const key = `${record.date}-${record.exerciseType}`;
+      const groupCount = grouped[key].length;
+      const limit = company?.limits?.[record.exerciseType.toLowerCase()]?.daily || 0;
+      const isExceeded = limit > 0 && groupCount > limit;
+      const exceededCount = isExceeded ? groupCount - limit : 0;
+
+      return {
+        ...record,
+        isExceeded,
+        exceededCount,
+        totalCount: groupCount
+      };
+    });
+
+    return withExceeded.sort((a, b) => {
+      const dateA = new Date(`${a.date} ${a.time}`);
+      const dateB = new Date(`${b.date} ${b.time}`);
+      return dateB - dateA;
+    });
+  });
 
   const styles = {
     container: {
@@ -96,19 +122,21 @@ const AttendanceList = () => {
   };
 
   const handleExcelDownload = () => {
-    const excelData = attendanceList.map(record => ({
+    const excelData = attendanceByDate.map(record => ({
       날짜: record.date,
       시간: record.time,
       이름: record.memberName,
       전화번호: record.phoneNumber,
-      운동종류: record.exerciseType
+      운동종류: record.exerciseType,
+      초과여부: record.isExceeded ? `${record.exceededCount}명 초과` : '정상',
+      총인원: record.totalCount
     }));
 
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(excelData);
     ws['!cols'] = [
       { wch: 15 }, { wch: 10 }, { wch: 10 }, 
-      { wch: 15 }, { wch: 10 }
+      { wch: 15 }, { wch: 10 }, { wch: 10 }, { wch: 10 }
     ];
 
     XLSX.utils.book_append_sheet(wb, ws, "출석기록");
@@ -121,7 +149,7 @@ const AttendanceList = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 py-12 px-4 pt-20">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-900">
             {company.name} 출석 목록
@@ -169,13 +197,18 @@ const AttendanceList = () => {
                     운동종류
                   </th>
                   <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    상태
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     관리
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {attendanceList.map((record) => (
-                  <tr key={record.id} className="hover:bg-gray-50">
+                {attendanceByDate.map((record) => (
+                  <tr key={record.id} className={`hover:bg-gray-50 ${
+                    record.isExceeded ? 'bg-red-50' : ''
+                  }`}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {record.date}
                     </td>
@@ -190,6 +223,14 @@ const AttendanceList = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {record.exerciseType}
+                    </td>
+                    <td className={`px-6 py-4 whitespace-nowrap text-sm text-center ${
+                      record.isExceeded ? 'text-red-600 font-semibold' : 'text-green-600'
+                    }`}>
+                      {record.isExceeded 
+                        ? `${record.exceededCount}명 초과 (총 ${record.totalCount}명)`
+                        : `정상 (${record.totalCount}명)`
+                      }
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
                       <button
@@ -206,7 +247,7 @@ const AttendanceList = () => {
           </div>
         </div>
 
-        {attendanceList.length === 0 && (
+        {attendanceByDate.length === 0 && (
           <div className="text-center py-8 text-gray-500">
             출석 기록이 없습니다.
           </div>
