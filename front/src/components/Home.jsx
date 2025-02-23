@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from 'react-redux';
 import "./ImageSlider.css";
-import { createCompany } from '../redux/slices/companySlice';
+import { addCompany, deleteCompany } from '../redux/slices/companySlice';
 
 const Home = () => {
   const [selectedCompany, setSelectedCompany] = useState(null);
@@ -24,7 +24,7 @@ const Home = () => {
       ...newCompany,
       id: Date.now() // 고유 ID 생성
     };
-    dispatch(createCompany(companyToAdd));
+    dispatch(addCompany(companyToAdd));
     setNewCompany({ name: "", logo: "" });
     setShowAddModal(false);
   };
@@ -72,9 +72,9 @@ const Home = () => {
   };
 
   const handleDeleteClick = (e, companyId) => {
-    e.stopPropagation(); // 이벤트 버블링 방지
+    e.stopPropagation();
     if (window.confirm('정말로 이 기업을 삭제하시겠습니까?')) {
-      dispatch({ type: 'companies/deleteCompany', payload: companyId });
+      dispatch(deleteCompany(companyId));
       setSelectedCompany(null);
     }
   };

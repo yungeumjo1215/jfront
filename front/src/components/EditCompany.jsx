@@ -12,29 +12,26 @@ const EditCompany = () => {
     state.companies.companies.find(c => c.id === parseInt(companyId))
   );
 
-  const [companyData, setCompanyData] = useState({
-    name: company?.name || "",
-    logo: company?.logo || ""
-  });
+  const [name, setName] = useState(company?.name || "");
+  const [dailyLimit, setDailyLimit] = useState(company?.dailyLimit || 0);
+  const [allowExceed, setAllowExceed] = useState(company?.allowExceed || false);
+  const [logo, setLogo] = useState(company?.logo || "");
   const [previewImage, setPreviewImage] = useState(company?.logo || null);
   const [logoType, setLogoType] = useState('url');
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
     dispatch(updateCompany({
       id: parseInt(companyId),
-      data: companyData
+      name,
+      dailyLimit: parseInt(dailyLimit),
+      allowExceed,
+      logo
     }));
+
     alert('기업 정보가 수정되었습니다.');
     navigate('/');
-  };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setCompanyData(prev => ({
-      ...prev,
-      [name]: value
-    }));
   };
 
   const handleImageChange = (e) => {
@@ -43,7 +40,7 @@ const EditCompany = () => {
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreviewImage(reader.result);
-        setCompanyData({ ...companyData, logo: reader.result });
+        setLogo(reader.result);
       };
       reader.readAsDataURL(file);
     }
@@ -51,7 +48,7 @@ const EditCompany = () => {
 
   const handleLogoUrlChange = (e) => {
     const url = e.target.value;
-    setCompanyData({ ...companyData, logo: url });
+    setLogo(url);
     setPreviewImage(url);
   };
 
@@ -60,193 +57,171 @@ const EditCompany = () => {
   }
 
   return (
-    <div style={{
-      marginTop: "64px",
-      padding: "20px",
-      maxWidth: "600px",
-      margin: "0 auto"
-    }}>
-      <h1 style={{
-        fontSize: "32px",
-        fontWeight: "bold",
-        textAlign: "center",
-        marginBottom: "30px",
-        color: "#333"
-      }}>기업 정보 수정</h1>
-      
-      <form onSubmit={handleSubmit} style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "20px"
-      }}>
-        <div style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "8px"
-        }}>
-          <label style={{
-            fontSize: "16px",
-            fontWeight: "500",
-            color: "#444"
-          }}>기업명</label>
-          <input
-            type="text"
-            name="name"
-            value={companyData.name}
-            onChange={handleChange}
-            style={{
-              padding: "12px",
-              fontSize: "16px",
-              borderRadius: "5px",
-              border: "1px solid #ccc"
-            }}
-            required
-          />
-        </div>
+    <div className="min-h-screen bg-gray-100 py-12 px-4 pt-20">
+      <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
+        <h2 className="text-2xl font-bold text-center mb-6">기업 정보 수정</h2>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-gray-700 mb-2">기업명</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full p-2 border rounded"
+              required
+            />
+          </div>
 
-        <div style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "8px"
-        }}>
-          <label style={{
-            fontSize: "16px",
-            fontWeight: "500",
-            color: "#444"
-          }}>로고 입력 방식</label>
-          <div style={{
-            display: "flex",
-            gap: "16px",
-            marginBottom: "8px"
-          }}>
-            <label style={{
-              display: "flex",
-              alignItems: "center"
-            }}>
-              <input
-                type="radio"
-                value="url"
-                checked={logoType === 'url'}
-                onChange={(e) => setLogoType(e.target.value)}
-                style={{
-                  marginRight: "8px"
-                }}
-              />
-              URL 입력
-            </label>
-            <label style={{
-              display: "flex",
-              alignItems: "center"
-            }}>
-              <input
-                type="radio"
-                value="file"
-                checked={logoType === 'file'}
-                onChange={(e) => setLogoType(e.target.value)}
-                style={{
-                  marginRight: "8px"
-                }}
-              />
-              파일 업로드
+          <div>
+            <label className="block text-gray-700 mb-2">일일 출석 제한 수</label>
+            <input
+              type="number"
+              value={dailyLimit}
+              onChange={(e) => setDailyLimit(e.target.value)}
+              className="w-full p-2 border rounded"
+              min="0"
+              required
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              0으로 설정하면 제한이 없습니다
+            </p>
+          </div>
+
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              checked={allowExceed}
+              onChange={(e) => setAllowExceed(e.target.checked)}
+              className="mr-2"
+            />
+            <label className="text-gray-700">
+              일일 제한 초과 허용
             </label>
           </div>
 
-          {logoType === 'url' ? (
-            <input
-              type="text"
-              placeholder="로고 이미지 URL 입력"
-              value={companyData.logo}
-              onChange={handleLogoUrlChange}
-              style={{
-                padding: "12px",
-                fontSize: "16px",
-                borderRadius: "5px",
-                border: "1px solid #ccc"
-              }}
-            />
-          ) : (
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              style={{
-                padding: "12px",
-                fontSize: "16px",
-                borderRadius: "5px",
-                border: "1px solid #ccc"
-              }}
-            />
-          )}
-
-          {previewImage && (
-            <div style={{ marginTop: "10px" }}>
-              <div style={{
-                width: '100%',
-                height: '96px',
-                backgroundColor: '#f5f5f5',
-                borderRadius: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                overflow: 'hidden'
+          <div style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px"
+          }}>
+            <label style={{
+              fontSize: "16px",
+              fontWeight: "500",
+              color: "#444"
+            }}>로고 입력 방식</label>
+            <div style={{
+              display: "flex",
+              gap: "16px",
+              marginBottom: "8px"
+            }}>
+              <label style={{
+                display: "flex",
+                alignItems: "center"
               }}>
-                <img
-                  src={previewImage}
-                  alt="로고 미리보기"
+                <input
+                  type="radio"
+                  value="url"
+                  checked={logoType === 'url'}
+                  onChange={(e) => setLogoType(e.target.value)}
                   style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'contain',
-                    padding: '8px'
-                  }}
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    setPreviewImage(null);
+                    marginRight: "8px"
                   }}
                 />
-              </div>
+                URL 입력
+              </label>
+              <label style={{
+                display: "flex",
+                alignItems: "center"
+              }}>
+                <input
+                  type="radio"
+                  value="file"
+                  checked={logoType === 'file'}
+                  onChange={(e) => setLogoType(e.target.value)}
+                  style={{
+                    marginRight: "8px"
+                  }}
+                />
+                파일 업로드
+              </label>
             </div>
-          )}
-        </div>
 
-        <div style={{
-          display: "flex",
-          gap: "10px",
-          justifyContent: "center"
-        }}>
-          <button
-            type="submit"
-            style={{
-              padding: "12px 24px",
-              backgroundColor: "#4CAF50",
-              color: "white",
-              border: "none",
-              borderRadius: "5px",
-              cursor: "pointer",
-              fontSize: "16px",
-              fontWeight: "bold"
-            }}
-          >
-            수정하기
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            style={{
-              padding: "12px 24px",
-              backgroundColor: "#f44336",
-              color: "white",
-              border: "none",
-              borderRadius: "5px",
-              cursor: "pointer",
-              fontSize: "16px",
-              fontWeight: "bold"
-            }}
-          >
-            취소
-          </button>
-        </div>
-      </form>
+            {logoType === 'url' ? (
+              <input
+                type="text"
+                placeholder="로고 이미지 URL 입력"
+                value={logo}
+                onChange={handleLogoUrlChange}
+                style={{
+                  padding: "12px",
+                  fontSize: "16px",
+                  borderRadius: "5px",
+                  border: "1px solid #ccc"
+                }}
+              />
+            ) : (
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                style={{
+                  padding: "12px",
+                  fontSize: "16px",
+                  borderRadius: "5px",
+                  border: "1px solid #ccc"
+                }}
+              />
+            )}
+
+            {previewImage && (
+              <div style={{ marginTop: "10px" }}>
+                <div style={{
+                  width: '100%',
+                  height: '96px',
+                  backgroundColor: '#f5f5f5',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'hidden'
+                }}>
+                  <img
+                    src={previewImage}
+                    alt="로고 미리보기"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'contain',
+                      padding: '8px'
+                    }}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      setPreviewImage(null);
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-center space-x-4">
+            <button
+              type="submit"
+              className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              수정
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/')}
+              className="px-6 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+            >
+              취소
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

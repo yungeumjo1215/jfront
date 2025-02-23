@@ -20,6 +20,18 @@ const AttendanceCheck = () => {
     )
   );
   
+  const company = useSelector(state =>
+    state.companies.companies.find(c => c.id === parseInt(companyId))
+  );
+
+  // 오늘 출석 수 계산
+  const todayAttendance = useSelector(state => {
+    const today = new Date().toLocaleDateString();
+    return state.attendance.attendanceList.filter(a => 
+      a.companyId === parseInt(companyId) && a.date === today
+    ).length;
+  });
+  
   // 전화번호 입력 시 일치하는 회원들 찾기
   const handlePhoneChange = (value) => {
     setPhoneLastDigits(value);
@@ -53,6 +65,18 @@ const AttendanceCheck = () => {
       return;
     }
 
+    // 일일 제한 체크
+    if (company.dailyLimit > 0 && todayAttendance >= company.dailyLimit) {
+      if (!company.allowExceed) {
+        setMessage(`일일 출석 제한(${company.dailyLimit}명)을 초과했습니다.`);
+        return;
+      } else {
+        if (!window.confirm(`일일 출석 제한(${company.dailyLimit}명)을 초과했습니다. 계속하시겠습니까?`)) {
+          return;
+        }
+      }
+    }
+
     const member = members.find(m => m.id === selectedMemberId);
     
     if (member) {
@@ -81,6 +105,18 @@ const AttendanceCheck = () => {
       <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
         <h2 className="text-2xl font-bold text-center mb-6">출석체크</h2>
         
+        {/* 일일 출석 현황 표시 */}
+        {company?.dailyLimit > 0 && (
+          <div className="mb-4 text-center">
+            <p className={`text-sm ${todayAttendance >= company.dailyLimit ? 'text-red-600' : 'text-gray-600'}`}>
+              오늘 출석: {todayAttendance} / {company.dailyLimit}명
+              {company.allowExceed && todayAttendance >= company.dailyLimit && 
+                " (초과 허용)"
+              }
+            </p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-gray-700 mb-2">운동 종류</label>

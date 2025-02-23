@@ -1,54 +1,50 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
 
-const initialState = {
-  companies: [
-    { id: 1, name: "삼성전자", logo: "samsung.png" },
-    { id: 2, name: "현대자동차", logo: "hyundai.png" }
-  ],
-  status: 'idle',
-  error: null
+// 로컬 스토리지에서 데이터 불러오기
+const loadCompanies = () => {
+  try {
+    const savedCompanies = localStorage.getItem('companies');
+    return savedCompanies ? JSON.parse(savedCompanies) : [];
+  } catch (err) {
+    console.error('Error loading companies:', err);
+    return [];
+  }
 };
-
-export const createCompany = createAsyncThunk(
-  'companies/create',
-  async (companyData) => {
-    // 로컬에서 처리
-    return {
-      id: Date.now(),  // 유니크한 ID 생성
-      ...companyData
-    };
-  }
-);
-
-export const updateCompany = createAsyncThunk(
-  'companies/update',
-  async ({ id, data }) => {
-    return {
-      id,
-      ...data
-    };
-  }
-);
 
 const companySlice = createSlice({
   name: 'companies',
-  initialState,
-  reducers: {},
-  extraReducers: (builder) => {
-    builder
-      .addCase(createCompany.fulfilled, (state, action) => {
-        state.companies.push(action.payload);
-      })
-      .addCase(updateCompany.fulfilled, (state, action) => {
-        const index = state.companies.findIndex(c => c.id === action.payload.id);
-        if (index !== -1) {
-          state.companies[index] = {
-            ...state.companies[index],
-            ...action.payload
-          };
-        }
+  initialState: {
+    companies: loadCompanies()
+  },
+  reducers: {
+    addCompany: (state, action) => {
+      state.companies.push({
+        ...action.payload,
+        id: Date.now(),
+        dailyLimit: 0,
+        allowExceed: false
       });
+      // 로컬 스토리지에 저장
+      localStorage.setItem('companies', JSON.stringify(state.companies));
+    },
+    updateCompany: (state, action) => {
+      const index = state.companies.findIndex(c => c.id === action.payload.id);
+      if (index !== -1) {
+        state.companies[index] = {
+          ...state.companies[index],
+          ...action.payload
+        };
+        // 로컬 스토리지에 저장
+        localStorage.setItem('companies', JSON.stringify(state.companies));
+      }
+    },
+    deleteCompany: (state, action) => {
+      state.companies = state.companies.filter(c => c.id !== action.payload);
+      // 로컬 스토리지에 저장
+      localStorage.setItem('companies', JSON.stringify(state.companies));
+    }
   }
 });
 
+export const { addCompany, updateCompany, deleteCompany } = companySlice.actions;
 export default companySlice.reducer;
