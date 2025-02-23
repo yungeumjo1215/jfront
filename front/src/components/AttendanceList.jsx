@@ -148,7 +148,10 @@ const AttendanceList = () => {
 
   const handleDelete = (recordId) => {
     if (window.confirm('이 출석 기록을 삭제하시겠습니까?')) {
-      dispatch(deleteAttendance(recordId));
+      dispatch(deleteAttendance({
+        id: recordId,
+        companyId: Number(companyId)
+      }));
     }
   };
 

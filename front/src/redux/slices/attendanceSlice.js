@@ -39,8 +39,9 @@ const attendanceSlice = createSlice({
       localStorage.setItem('attendance', JSON.stringify(state.attendanceList));
     },
     deleteAttendance: (state, action) => {
-      state.attendanceList = state.attendanceList.filter(
-        record => record.id !== action.payload
+      state.attendanceList = state.attendanceList.filter(record => 
+        !(record.id === action.payload.id && 
+          record.companyId === action.payload.companyId)
       );
       localStorage.setItem('attendance', JSON.stringify(state.attendanceList));
     }
