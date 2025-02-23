@@ -39,9 +39,20 @@ const memberSlice = createSlice({
       }
     },
     deleteMember: (state, action) => {
-      state.membersList = state.membersList.filter(
-        member => !(member.id === action.payload.id && 
-                   member.companyId === action.payload.companyId)
+      if (typeof action.payload !== 'object' || action.payload === null) {
+        console.error('Invalid payload for deleteMember:', action.payload);
+        return;
+      }
+
+      const { id, companyId } = action.payload;
+      
+      if (!id || !companyId) {
+        console.error('Missing id or companyId in deleteMember payload:', action.payload);
+        return;
+      }
+
+      state.membersList = state.membersList.filter(member => 
+        !(member.id === id && member.companyId === companyId)
       );
       localStorage.setItem('members', JSON.stringify(state.membersList));
     }

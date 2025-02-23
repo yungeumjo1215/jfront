@@ -23,7 +23,10 @@ const MemberList = () => {
 
   const handleDelete = (memberId) => {
     if (window.confirm('정말로 이 회원을 삭제하시겠습니까?')) {
-      dispatch(deleteMember(memberId));
+      dispatch(deleteMember({
+        id: memberId,
+        companyId: Number(companyId)
+      }));
     }
   };
 
