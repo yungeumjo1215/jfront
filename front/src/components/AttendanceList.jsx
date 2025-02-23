@@ -9,6 +9,11 @@ const AttendanceList = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   
+  // 전체 출석 데이터를 Redux store에서 가져오기
+  const allAttendanceData = useSelector(state => 
+    state.attendance.attendanceList.filter(a => a.companyId === Number(companyId))
+  );
+
   // 모든 출석 날짜 목록 가져오기
   const allDates = useSelector(state => {
     const dates = state.attendance.attendanceList
@@ -80,20 +85,100 @@ const AttendanceList = () => {
     });
   });
 
-  // 엑셀 다운로드를 위한 전체 출석 데이터 가져오기
-  const getAllAttendanceData = useSelector(state => {
-    return state.attendance.attendanceList
-      .filter(a => a.companyId === Number(companyId))
-      .map(record => {
-        const exerciseType = record.exerciseType.toLowerCase();
-        const limit = company?.limits?.[exerciseType]?.daily || 0;
-        return {
-          ...record,
-          limit
-        };
-      })
-      .sort((a, b) => new Date(b.date) - new Date(a.date));
-  });
+  // 엑셀 다운로드를 위한 데이터 가져오기
+  const getExcelData = () => {
+    const startDate = new Date(excelDateRange.startDate);
+    const endDate = new Date(excelDateRange.endDate);
+    endDate.setHours(23, 59, 59);
+
+    // 선택된 기간의 데이터 필터링
+    const filteredData = allAttendanceData.filter(record => {
+      const recordDate = new Date(record.date);
+      return recordDate >= startDate && recordDate <= endDate;
+    });
+
+    // 운동 종류별로 그룹화하여 상태 정보 추가
+    const groupedByDate = filteredData.reduce((acc, record) => {
+      const key = `${record.date}-${record.exerciseType}`;
+      if (!acc[key]) {
+        acc[key] = [];
+      }
+      acc[key].push(record);
+      return acc;
+    }, {});
+
+    return filteredData.map(record => {
+      const key = `${record.date}-${record.exerciseType}`;
+      const groupCount = groupedByDate[key].length;
+      const exerciseType = record.exerciseType.toLowerCase();
+      const limit = company?.limits?.[exerciseType]?.daily || 0;
+      const isExceeded = limit > 0 && groupCount > limit;
+
+      return {
+        날짜: record.date,
+        시간: record.time,
+        이름: record.memberName,
+        전화번호: record.phoneNumber,
+        운동종류: record.exerciseType,
+        상태: isExceeded 
+          ? `초과 (${limit}명/${groupCount}명)`
+          : `${limit}명/${groupCount}명`
+      };
+    }).sort((a, b) => new Date(a.날짜) - new Date(b.날짜));
+  };
+
+  // 엑셀 다운로드 처리
+  const handleExcelDownload = () => {
+    const excelData = getExcelData();
+    
+    if (excelData.length === 0) {
+      alert('선택한 기간에 출석 기록이 없습니다.');
+      return;
+    }
+
+    // 워크북 생성
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(excelData);
+
+    // 열 너비 설정
+    const columnWidths = [
+      { wch: 15 },  // 날짜
+      { wch: 10 },  // 시간
+      { wch: 12 },  // 이름
+      { wch: 15 },  // 전화번호
+      { wch: 10 },  // 운동종류
+      { wch: 20 }   // 상태
+    ];
+    ws['!cols'] = columnWidths;
+
+    // 스타일 적용
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    for (let R = range.s.r; R <= range.e.r; ++R) {
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const cell_address = { c: C, r: R };
+        const cell_ref = XLSX.utils.encode_cell(cell_address);
+        if (!ws[cell_ref]) continue;
+        
+        if (R === 0) {
+          ws[cell_ref].s = {
+            font: { bold: true },
+            alignment: { horizontal: 'center' },
+            fill: { fgColor: { rgb: "E6E6E6" } }
+          };
+        } else {
+          ws[cell_ref].s = {
+            alignment: { horizontal: 'center' }
+          };
+        }
+      }
+    }
+
+    // 파일명에 기간 포함
+    const fileName = `${company?.name}_출석기록_${excelDateRange.startDate}_${excelDateRange.endDate}.xlsx`;
+
+    XLSX.utils.book_append_sheet(wb, ws, "출석기록");
+    XLSX.writeFile(wb, fileName);
+  };
 
   const styles = {
     container: {
@@ -167,71 +252,6 @@ const AttendanceList = () => {
       console.log('Deleting record:', recordId); // 디버깅용
       dispatch(deleteAttendance(recordId));
     }
-  };
-
-  // 엑셀 다운로드 처리
-  const handleExcelDownload = () => {
-    const startDate = new Date(excelDateRange.startDate);
-    const endDate = new Date(excelDateRange.endDate);
-    endDate.setHours(23, 59, 59);
-
-    // 선택된 기간의 데이터 필터링
-    const filteredData = getAllAttendanceData.filter(record => {
-      const recordDate = new Date(record.date);
-      return recordDate >= startDate && recordDate <= endDate;
-    });
-
-    // 엑셀 데이터 포맷팅
-    const excelData = filteredData.map(record => ({
-      '날짜': record.date,
-      '시간': record.time,
-      '이름': record.memberName,
-      '전화번호': record.phoneNumber,
-      '운동종류': record.exerciseType,
-      '상태': record.totalCount > record.limit ? 
-        `초과 (${record.limit}명/${record.totalCount}명)` : 
-        `${record.limit}명/${record.totalCount}명`
-    }));
-
-    // 워크북 생성
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(excelData);
-
-    // 열 너비 설정
-    const columnWidths = [
-      { wch: 15 },  // 날짜
-      { wch: 10 },  // 시간
-      { wch: 12 },  // 이름
-      { wch: 15 },  // 전화번호
-      { wch: 10 },  // 운동종류
-      { wch: 20 }   // 상태
-    ];
-    ws['!cols'] = columnWidths;
-
-    // 스타일 적용
-    const range = XLSX.utils.decode_range(ws['!ref']);
-    for (let R = range.s.r; R <= range.e.r; ++R) {
-      for (let C = range.s.c; C <= range.e.c; ++C) {
-        const cell_address = { c: C, r: R };
-        const cell_ref = XLSX.utils.encode_cell(cell_address);
-        if (!ws[cell_ref]) continue;
-        
-        if (R === 0) {
-          ws[cell_ref].s = {
-            font: { bold: true },
-            alignment: { horizontal: 'center' },
-            fill: { fgColor: { rgb: "E6E6E6" } }
-          };
-        } else {
-          ws[cell_ref].s = {
-            alignment: { horizontal: 'center' }
-          };
-        }
-      }
-    }
-
-    XLSX.utils.book_append_sheet(wb, ws, "출석기록");
-    XLSX.writeFile(wb, `${company?.name}_출석기록_${excelDateRange.startDate}_${excelDateRange.endDate}.xlsx`);
   };
 
   if (!company) {
