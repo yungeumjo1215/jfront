@@ -10,11 +10,11 @@ const AttendanceList = () => {
   const dispatch = useDispatch();
   
   const company = useSelector(state => 
-    state.companies.companies.find(c => c.id === parseInt(companyId))
+    state.companies.companies.find(c => c.id === Number(companyId))
   );
   
   const attendanceList = useSelector(state => 
-    state.attendance.attendanceList.filter(a => a.companyId === parseInt(companyId))
+    state.attendance.attendanceList.filter(a => a.companyId === Number(companyId))
   );
 
   const styles = {
@@ -106,7 +106,7 @@ const AttendanceList = () => {
     ];
 
     XLSX.utils.book_append_sheet(wb, ws, "출석기록");
-    XLSX.writeFile(wb, `${company?.name}_출석기록_${new Date().toLocaleDateString()}.xlsx`);
+    XLSX.writeFile(wb, `${company.name}_출석기록.xlsx`);
   };
 
   if (!company) {
@@ -116,15 +116,37 @@ const AttendanceList = () => {
   return (
     <div className="min-h-screen bg-gray-100 py-12 px-4 pt-20">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold text-center mb-8">
-          {company.name} 출석 목록
-        </h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">
+            {company.name} 출석 목록
+          </h1>
+          <div className="flex gap-4">
+            <button
+              onClick={handleExcelDownload}
+              className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
+            >
+              엑셀 다운로드
+            </button>
+            <button
+              onClick={() => navigate(`/company/${companyId}/attendance/check`)}
+              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+            >
+              출석체크
+            </button>
+            <button
+              onClick={() => navigate('/')}
+              className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
+            >
+              홈으로
+            </button>
+          </div>
+        </div>
 
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden mb-6">
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-gray-50">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     날짜
                   </th>
@@ -140,26 +162,25 @@ const AttendanceList = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     운동종류
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    관리
-                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {attendanceList.map((record) => (
                   <tr key={record.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">{record.date}</td>
-                    <td className="px-6 py-4">{record.time}</td>
-                    <td className="px-6 py-4">{record.memberName}</td>
-                    <td className="px-6 py-4">{record.phoneNumber}</td>
-                    <td className="px-6 py-4">{record.exerciseType}</td>
-                    <td className="px-6 py-4">
-                      <button
-                        onClick={() => handleDelete(record)}
-                        className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-                      >
-                        삭제
-                      </button>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {record.date}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {record.time}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {record.memberName}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {record.phoneNumber}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {record.exerciseType}
                     </td>
                   </tr>
                 ))}
@@ -168,26 +189,11 @@ const AttendanceList = () => {
           </div>
         </div>
 
-        <div className="mt-6 flex justify-center gap-4">
-          <button
-            onClick={handleExcelDownload}
-            className="px-6 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
-          >
-            엑셀로 저장
-          </button>
-          <button
-            onClick={() => navigate(`/company/${companyId}/attendance/check`)}
-            className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-          >
-            출석체크
-          </button>
-          <button
-            onClick={() => navigate('/')}
-            className="px-6 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
-          >
-            홈으로
-          </button>
-        </div>
+        {attendanceList.length === 0 && (
+          <div className="text-center py-8 text-gray-500">
+            출석 기록이 없습니다.
+          </div>
+        )}
       </div>
     </div>
   );

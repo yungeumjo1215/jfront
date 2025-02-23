@@ -17,11 +17,19 @@ const memberSlice = createSlice({
   },
   reducers: {
     addMember: (state, action) => {
-      state.membersList.push(action.payload);
+      const newMember = {
+        ...action.payload,
+        id: Date.now(),
+        registeredDate: new Date().toLocaleDateString()
+      };
+      state.membersList.push(newMember);
       localStorage.setItem('members', JSON.stringify(state.membersList));
     },
     updateMember: (state, action) => {
-      const index = state.membersList.findIndex(member => member.id === action.payload.id);
+      const index = state.membersList.findIndex(
+        member => member.id === action.payload.id && 
+                 member.companyId === action.payload.companyId
+      );
       if (index !== -1) {
         state.membersList[index] = {
           ...state.membersList[index],
@@ -31,7 +39,10 @@ const memberSlice = createSlice({
       }
     },
     deleteMember: (state, action) => {
-      state.membersList = state.membersList.filter(member => member.id !== action.payload);
+      state.membersList = state.membersList.filter(
+        member => !(member.id === action.payload.id && 
+                   member.companyId === action.payload.companyId)
+      );
       localStorage.setItem('members', JSON.stringify(state.membersList));
     }
   }
