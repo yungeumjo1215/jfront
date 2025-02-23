@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { addAttendance } from "../redux/slices/attendanceSlice";
-import { selectMembers } from "../redux/slices/memberSlice";
 
 const AttendanceCheck = () => {
   const { companyId } = useParams();
@@ -12,16 +11,34 @@ const AttendanceCheck = () => {
   const [phoneLastDigits, setPhoneLastDigits] = useState("");
   const [message, setMessage] = useState("");
   const [exerciseType, setExerciseType] = useState("");
+  const [matchingMembers, setMatchingMembers] = useState([]); // 일치하는 회원들
+  const [selectedMemberId, setSelectedMemberId] = useState(null); // 선택된 회원
   
-  const members = useSelector(selectMembers).filter(
-    member => member.companyId === parseInt(companyId)
+  const members = useSelector(state => 
+    state.members.membersList.filter(
+      member => member.companyId === parseInt(companyId)
+    )
   );
   
-  const company = useSelector(state => 
-    state.companies.companies.find(c => c.id === parseInt(companyId))
-  );
-
-  const attendanceList = useSelector(state => state.attendance.attendanceList);
+  // 전화번호 입력 시 일치하는 회원들 찾기
+  const handlePhoneChange = (value) => {
+    setPhoneLastDigits(value);
+    setSelectedMemberId(null);
+    setMessage("");
+    
+    if (value.length === 4) {
+      const matching = members.filter(m => m.phoneNumber.slice(-4) === value);
+      setMatchingMembers(matching);
+      
+      if (matching.length === 0) {
+        setMessage("등록되지 않은 회원입니다.");
+      } else if (matching.length === 1) {
+        setSelectedMemberId(matching[0].id);
+      }
+    } else {
+      setMatchingMembers([]);
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -31,21 +48,14 @@ const AttendanceCheck = () => {
       return;
     }
 
-    const member = members.find(m => m.phoneNumber.slice(-4) === phoneLastDigits);
+    if (!selectedMemberId) {
+      setMessage("회원을 선택해주세요.");
+      return;
+    }
+
+    const member = members.find(m => m.id === selectedMemberId);
     
     if (member) {
-      // 오늘 이미 출석했는지 확인
-      const today = new Date().toLocaleDateString();
-      const alreadyChecked = attendanceList.some(a => 
-        a.memberId === member.id && 
-        a.date === today
-      );
-
-      if (alreadyChecked) {
-        setMessage("이미 오늘 출석하셨습니다.");
-        return;
-      }
-
       const now = new Date();
       const attendance = {
         memberId: member.id,
@@ -58,15 +68,11 @@ const AttendanceCheck = () => {
       };
       
       dispatch(addAttendance(attendance));
-      setMessage(`${member.name}님 출석이 완료되었습니다!`);
+      setMessage("출석이 완료되었습니다.");
       setPhoneLastDigits("");
       setExerciseType("");
-      
-      setTimeout(() => {
-        setMessage("");
-      }, 3000);
-    } else {
-      setMessage("등록되지 않은 회원입니다.");
+      setMatchingMembers([]);
+      setSelectedMemberId(null);
     }
   };
 
@@ -76,7 +82,6 @@ const AttendanceCheck = () => {
         <h2 className="text-2xl font-bold text-center mb-6">출석체크</h2>
         
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* 운동 종류 선택 */}
           <div>
             <label className="block text-gray-700 mb-2">운동 종류</label>
             <div className="flex gap-4">
@@ -108,18 +113,35 @@ const AttendanceCheck = () => {
             <input
               type="text"
               value={phoneLastDigits}
-              onChange={(e) => {
-                const value = e.target.value.replace(/[^0-9]/g, '');
-                if (value.length <= 4) {
-                  setPhoneLastDigits(value);
-                }
-              }}
+              onChange={(e) => handlePhoneChange(e.target.value)}
               className="w-full p-2 border rounded"
               maxLength="4"
               pattern="\d{4}"
               required
             />
           </div>
+
+          {/* 일치하는 회원 목록 */}
+          {matchingMembers.length > 1 && (
+            <div className="mt-4">
+              <label className="block text-gray-700 mb-2">회원 선택</label>
+              <div className="space-y-2">
+                {matchingMembers.map((member) => (
+                  <label key={member.id} className="flex items-center p-2 border rounded cursor-pointer hover:bg-gray-50">
+                    <input
+                      type="radio"
+                      name="member"
+                      value={member.id}
+                      checked={selectedMemberId === member.id}
+                      onChange={() => setSelectedMemberId(member.id)}
+                      className="mr-2"
+                    />
+                    <span>{member.name} ({member.phoneNumber})</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
 
           {message && (
             <div className={`text-center ${
