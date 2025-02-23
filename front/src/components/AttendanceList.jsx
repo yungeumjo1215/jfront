@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { deleteAttendance } from "../redux/slices/attendanceSlice";
@@ -8,18 +8,24 @@ const AttendanceList = () => {
   const { companyId } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  
+  const [selectedDate, setSelectedDate] = useState(new Date().toLocaleDateString());
+  const [excelDateRange, setExcelDateRange] = useState({
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: new Date().toISOString().split('T')[0]
+  });
+
   const company = useSelector(state => 
     state.companies.companies.find(c => c.id === Number(companyId))
   );
   
   const attendanceByDate = useSelector(state => {
     const list = state.attendance.attendanceList.filter(a => 
-      a.companyId === Number(companyId)
+      a.companyId === Number(companyId) &&
+      a.date === selectedDate
     );
 
     const grouped = list.reduce((acc, record) => {
-      const key = `${record.date}-${record.exerciseType}`;
+      const key = record.exerciseType;
       if (!acc[key]) {
         acc[key] = [];
       }
@@ -27,25 +33,22 @@ const AttendanceList = () => {
       return acc;
     }, {});
 
-    const withExceeded = list.map(record => {
-      const key = `${record.date}-${record.exerciseType}`;
-      const groupCount = grouped[key].length;
-      const limit = company?.limits?.[record.exerciseType.toLowerCase()]?.daily || 0;
+    return list.map(record => {
+      const exerciseType = record.exerciseType.toLowerCase();
+      const limit = company?.limits?.[exerciseType]?.daily || 0;
+      const groupCount = grouped[record.exerciseType].length;
       const isExceeded = limit > 0 && groupCount > limit;
-      const exceededCount = isExceeded ? groupCount - limit : 0;
 
       return {
         ...record,
         isExceeded,
-        exceededCount,
-        totalCount: groupCount
+        totalCount: groupCount,
+        limit
       };
-    });
-
-    return withExceeded.sort((a, b) => {
-      const dateA = new Date(`${a.date} ${a.time}`);
-      const dateB = new Date(`${b.date} ${b.time}`);
-      return dateB - dateA;
+    }).sort((a, b) => {
+      const timeA = new Date(`${a.date} ${a.time}`);
+      const timeB = new Date(`${b.date} ${b.time}`);
+      return timeB - timeA;
     });
   });
 
@@ -122,25 +125,35 @@ const AttendanceList = () => {
   };
 
   const handleExcelDownload = () => {
-    const excelData = attendanceByDate.map(record => ({
+    const start = new Date(excelDateRange.startDate);
+    const end = new Date(excelDateRange.endDate);
+    end.setHours(23, 59, 59);
+
+    const filteredRecords = attendanceByDate.filter(record => {
+      const recordDate = new Date(record.date);
+      return recordDate >= start && recordDate <= end;
+    });
+
+    const excelData = filteredRecords.map(record => ({
       날짜: record.date,
       시간: record.time,
       이름: record.memberName,
       전화번호: record.phoneNumber,
       운동종류: record.exerciseType,
-      초과여부: record.isExceeded ? `${record.exceededCount}명 초과` : '정상',
-      총인원: record.totalCount
+      상태: record.isExceeded 
+        ? `초과 (${record.limit}명/${record.totalCount}명)`
+        : `${record.limit}명/${record.totalCount}명`
     }));
 
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(excelData);
     ws['!cols'] = [
-      { wch: 15 }, { wch: 10 }, { wch: 10 }, 
-      { wch: 15 }, { wch: 10 }, { wch: 10 }, { wch: 10 }
+      { wch: 15 }, { wch: 10 }, { wch: 15 }, 
+      { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 }
     ];
 
     XLSX.utils.book_append_sheet(wb, ws, "출석기록");
-    XLSX.writeFile(wb, `${company.name}_출석기록.xlsx`);
+    XLSX.writeFile(wb, `${company.name}_출석기록_${excelDateRange.startDate}_${excelDateRange.endDate}.xlsx`);
   };
 
   if (!company) {
@@ -150,29 +163,70 @@ const AttendanceList = () => {
   return (
     <div className="min-h-screen bg-gray-100 py-12 px-4 pt-20">
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">
-            {company.name} 출석 목록
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-6 text-center">
+            {company?.name} 출석 목록
           </h1>
-          <div className="flex gap-4">
-            <button
-              onClick={handleExcelDownload}
-              className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
-            >
-              엑셀 다운로드
-            </button>
-            <button
-              onClick={() => navigate(`/company/${companyId}/attendance/check`)}
-              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-            >
-              출석체크
-            </button>
-            <button
-              onClick={() => navigate('/')}
-              className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
-            >
-              홈으로
-            </button>
+          
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* 날짜 선택 */}
+              <div className="flex items-center justify-center bg-gray-50 rounded-lg p-4">
+                <label className="text-sm text-gray-600 mr-2">날짜:</label>
+                <input
+                  type="date"
+                  value={selectedDate.split('/').reverse().join('-')}
+                  onChange={(e) => setSelectedDate(new Date(e.target.value).toLocaleDateString())}
+                  className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* 엑셀 다운로드 기간 선택 */}
+              <div className="flex items-center justify-center bg-gray-50 rounded-lg p-4 col-span-2">
+                <span className="text-sm text-gray-600 mr-2">엑셀 다운로드:</span>
+                <input
+                  type="date"
+                  value={excelDateRange.startDate}
+                  onChange={(e) => setExcelDateRange(prev => ({
+                    ...prev,
+                    startDate: e.target.value
+                  }))}
+                  className="px-2 py-1 border rounded-lg mr-2"
+                />
+                <span className="mx-2">~</span>
+                <input
+                  type="date"
+                  value={excelDateRange.endDate}
+                  onChange={(e) => setExcelDateRange(prev => ({
+                    ...prev,
+                    endDate: e.target.value
+                  }))}
+                  className="px-2 py-1 border rounded-lg mr-2"
+                />
+                <button
+                  onClick={handleExcelDownload}
+                  className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                >
+                  다운로드
+                </button>
+              </div>
+
+              {/* 네비게이션 버튼 */}
+              <div className="flex items-center justify-center space-x-2">
+                <button
+                  onClick={() => navigate(`/company/${companyId}/attendance/check`)}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex-1"
+                >
+                  출석체크
+                </button>
+                <button
+                  onClick={() => navigate('/')}
+                  className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors flex-1"
+                >
+                  홈으로
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -181,9 +235,6 @@ const AttendanceList = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    날짜
-                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     시간
                   </th>
@@ -210,9 +261,6 @@ const AttendanceList = () => {
                     record.isExceeded ? 'bg-red-50' : ''
                   }`}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {record.date}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {record.time}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -225,11 +273,11 @@ const AttendanceList = () => {
                       {record.exerciseType}
                     </td>
                     <td className={`px-6 py-4 whitespace-nowrap text-sm text-center ${
-                      record.isExceeded ? 'text-red-600 font-semibold' : 'text-green-600'
+                      record.isExceeded ? 'text-red-600 font-semibold' : 'text-gray-600'
                     }`}>
                       {record.isExceeded 
-                        ? `${record.exceededCount}명 초과 (총 ${record.totalCount}명)`
-                        : `정상 (${record.totalCount}명)`
+                        ? `초과 (${record.limit}명/${record.totalCount}명)`
+                        : `${record.limit}명/${record.totalCount}명`
                       }
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
