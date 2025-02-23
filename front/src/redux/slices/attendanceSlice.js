@@ -35,17 +35,13 @@ const attendanceSlice = createSlice({
   },
   reducers: {
     addAttendance: (state, action) => {
-      const newAttendance = {
-        ...action.payload,
-        id: Date.now().toString() // 고유 ID 생성
-      };
-      state.attendanceList.push(newAttendance);
+      state.attendanceList.push(action.payload);
       localStorage.setItem('attendance', JSON.stringify(state.attendanceList));
     },
     deleteAttendance: (state, action) => {
-      // action.payload는 삭제할 출석 기록의 ID
-      state.attendanceList = state.attendanceList.filter(record => record.id !== action.payload);
-      // 변경된 목록을 로컬 스토리지에 저장
+      state.attendanceList = state.attendanceList.filter(
+        record => record.id !== action.payload
+      );
       localStorage.setItem('attendance', JSON.stringify(state.attendanceList));
     }
   },

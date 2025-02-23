@@ -14,7 +14,13 @@ const AttendanceList = () => {
   );
   
   const attendanceList = useSelector(state => 
-    state.attendance.attendanceList.filter(a => a.companyId === Number(companyId))
+    state.attendance.attendanceList
+      .filter(a => a.companyId === Number(companyId))
+      .sort((a, b) => {
+        const dateA = new Date(`${a.date} ${a.time}`);
+        const dateB = new Date(`${b.date} ${b.time}`);
+        return dateB - dateA;
+      })
   );
 
   const styles = {
@@ -83,9 +89,9 @@ const AttendanceList = () => {
     };
   };
 
-  const handleDelete = (recordToDelete) => {
-    if (window.confirm(`${recordToDelete.memberName}님의 ${recordToDelete.date} ${recordToDelete.time} 출석 기록을 삭제하시겠습니까?`)) {
-      dispatch(deleteAttendance(recordToDelete.id));
+  const handleDelete = (recordId) => {
+    if (window.confirm('이 출석 기록을 삭제하시겠습니까?')) {
+      dispatch(deleteAttendance(recordId));
     }
   };
 
@@ -162,6 +168,9 @@ const AttendanceList = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     운동종류
                   </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    관리
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -181,6 +190,14 @@ const AttendanceList = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {record.exerciseType}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                      <button
+                        onClick={() => handleDelete(record.id)}
+                        className="text-red-600 hover:text-red-900 font-medium"
+                      >
+                        삭제
+                      </button>
                     </td>
                   </tr>
                 ))}
