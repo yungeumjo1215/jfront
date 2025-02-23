@@ -1,11 +1,13 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { deleteAttendance } from "../redux/slices/attendanceSlice";
 import * as XLSX from 'xlsx';
 
 const AttendanceList = () => {
   const { companyId } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   
   const company = useSelector(state => 
     state.companies.companies.find(c => c.id === parseInt(companyId))
@@ -81,6 +83,12 @@ const AttendanceList = () => {
     };
   };
 
+  const handleDelete = (recordId) => {
+    if (window.confirm('정말로 이 출석 기록을 삭제하시겠습니까?')) {
+      dispatch(deleteAttendance(recordId));
+    }
+  };
+
   const handleExcelDownload = () => {
     const excelData = attendanceList.map(record => ({
       날짜: record.date,
@@ -92,15 +100,10 @@ const AttendanceList = () => {
 
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(excelData);
-
-    const columnWidths = [
-      { wch: 15 },  // 날짜
-      { wch: 10 },  // 시간
-      { wch: 10 },  // 이름
-      { wch: 15 },  // 전화번호
-      { wch: 10 }   // 운동종류
+    ws['!cols'] = [
+      { wch: 15 }, { wch: 10 }, { wch: 10 }, 
+      { wch: 15 }, { wch: 10 }
     ];
-    ws['!cols'] = columnWidths;
 
     XLSX.utils.book_append_sheet(wb, ws, "출석기록");
     XLSX.writeFile(wb, `${company?.name}_출석기록_${new Date().toLocaleDateString()}.xlsx`);
@@ -137,11 +140,14 @@ const AttendanceList = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     운동종류
                   </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    관리
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {attendanceList.map((record, index) => (
-                  <tr key={index}>
+                {attendanceList.map((record) => (
+                  <tr key={record.id}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {record.date}
                     </td>
@@ -156,6 +162,14 @@ const AttendanceList = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {record.exerciseType}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <button
+                        onClick={() => handleDelete(record.id)}
+                        className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                      >
+                        삭제
+                      </button>
                     </td>
                   </tr>
                 ))}

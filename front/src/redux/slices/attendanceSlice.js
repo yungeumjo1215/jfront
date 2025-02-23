@@ -17,14 +17,53 @@ export const createAttendance = createAsyncThunk(
   }
 );
 
+const loadAttendance = () => {
+  try {
+    const savedAttendance = localStorage.getItem('attendance');
+    return savedAttendance ? JSON.parse(savedAttendance) : [];
+  } catch (err) {
+    console.error('Error loading attendance:', err);
+    return [];
+  }
+};
+
 const attendanceSlice = createSlice({
   name: 'attendance',
   initialState: {
-    attendanceList: []
+    attendanceList: loadAttendance(),
+    previousStates: []  // 이전 상태를 저장할 배열
   },
   reducers: {
     addAttendance: (state, action) => {
+      // 현재 상태를 이전 상태 배열에 저장
+      state.previousStates.push([...state.attendanceList]);
       state.attendanceList.push(action.payload);
+      localStorage.setItem('attendance', JSON.stringify(state.attendanceList));
+    },
+    updateAttendance: (state, action) => {
+      const index = state.attendanceList.findIndex(record => record.id === action.payload.id);
+      if (index !== -1) {
+        // 현재 상태를 이전 상태 배열에 저장
+        state.previousStates.push([...state.attendanceList]);
+        state.attendanceList[index] = {
+          ...state.attendanceList[index],
+          ...action.payload
+        };
+        localStorage.setItem('attendance', JSON.stringify(state.attendanceList));
+      }
+    },
+    deleteAttendance: (state, action) => {
+      // 현재 상태를 이전 상태 배열에 저장
+      state.previousStates.push([...state.attendanceList]);
+      state.attendanceList = state.attendanceList.filter(record => record.id !== action.payload);
+      localStorage.setItem('attendance', JSON.stringify(state.attendanceList));
+    },
+    undoAction: (state) => {
+      if (state.previousStates.length > 0) {
+        // 마지막 이전 상태를 현재 상태로 복원
+        state.attendanceList = state.previousStates.pop();
+        localStorage.setItem('attendance', JSON.stringify(state.attendanceList));
+      }
     }
   },
   extraReducers: (builder) => {
@@ -47,5 +86,5 @@ const attendanceSlice = createSlice({
   }
 });
 
-export const { addAttendance } = attendanceSlice.actions;
+export const { addAttendance, updateAttendance, deleteAttendance, undoAction } = attendanceSlice.actions;
 export default attendanceSlice.reducer; 
