@@ -1,0 +1,396 @@
+/* 챗봇 커스텀 */
+.back {
+  width: 100%;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  background-color: rgb(249 250 251) !important;
+  z-index: 40;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.react-chatbot-kit-chat-container {
+  width: 100% !important;
+  height: 100% !important;
+  background-color: #f8f9fa;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.react-chatbot-kit-chat-inner-container {
+  height: 100% !important;
+  display: flex;
+  flex-direction: column;
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.react-chatbot-kit-chat-message-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden !important;
+  padding: 20px;
+  scroll-behavior: smooth;
+  background-color: #fff !important;
+  width: 100% !important;
+  min-height: 0;
+}
+
+.react-chatbot-kit-chat-input-container {
+  position: relative;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  padding: 15px !important;
+  border-top: 1px solid #eaeaea;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+  min-height: 80px;
+}
+
+.react-chatbot-kit-chat-input {
+  height: 55px !important;
+  margin-right: 10px !important;
+  padding: 8px !important;
+  border: 2px solid #e1e1e1;
+  border-radius: 8px;
+  width: calc(100% - 16px);
+  font-size: 15px;
+  transition: all 0.2s ease;
+}
+
+.react-chatbot-kit-chat-input:focus {
+  outline: none;
+  border-color: #376b7e;
+  box-shadow: 0 0 0 2px rgba(55, 107, 126, 0.1);
+}
+
+.react-chatbot-kit-chat-btn-send {
+  height: 55px !important;
+  width: 100px !important;
+  margin: 0 5px !important;
+  background-color: #1e3a8a !important;
+  color: white;
+  border: none;
+  border-radius: 5px !important;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  font-size: 16px !important;
+}
+
+.react-chatbot-kit-chat-btn-send:hover {
+  background-color: rgb(29 78 216) !important;
+  transform: scale(1.05) !important;
+  cursor: pointer !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+.react-chatbot-kit-chat-btn-send:hover svg {
+  animation: sendPlane 0.6s ease-in-out infinite;
+}
+
+@keyframes sendPlane {
+  0% {
+    transform: translateX(0) rotate(0deg);
+  }
+  50% {
+    transform: translateX(8px) rotate(15deg) translateY(-4px);
+  }
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+}
+
+.react-chatbot-kit-chat-btn-send:active {
+  transform: scale(0.95) !important;
+}
+
+/* 챗봇 래퍼와 컨테이너 스타일 추가 */
+.chat-wrapper {
+  width: 60%;
+  min-width: 320px;
+  max-width: 1200px;
+  height: calc(100vh - 110px);
+  margin-top: 85px;
+  position: relative;
+  background-color: #fff;
+  border: 1px solid #eaeaea;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 입력창 컨테이너 내부 정렬 조정 */
+.react-chatbot-kit-chat-input-form {
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.react-chatbot-kit-chat-header {
+  background-color: #fff;
+  padding: 15px;
+  text-align: center;
+  font-weight: bold;
+  font-family: "Jua", sans-serif;
+  font-size: 1.2rem;
+  border-bottom: 1px solid #eaeaea;
+}
+
+.react-chatbot-kit-chat-bot-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin-right: 13px;
+  object-fit: contain;
+}
+
+.react-chatbot-kit-chat-bot-avatar-container {
+  display: flex;
+  align-items: center;
+  padding: 2px;
+}
+
+/* 메시지 컨테이너 내부의 메시지들도 가로 스크롤 방지 */
+.react-chatbot-kit-chat-bot-message-container,
+.react-chatbot-kit-user-chat-message-container {
+  width: 100% !important;
+  overflow-x: hidden !important;
+}
+.react-chatbot-kit-chat-bot-message-arrow {
+  left: -8px !important;
+  right: auto !important;
+  border-width: 8px 8px 8px 0 !important;
+  border-color: transparent #3959b3 transparent transparent !important;
+}
+
+.react-chatbot-kit-chat-bot-message {
+  max-width: 45% !important;
+  word-wrap: break-word !important;
+  width: fit-content !important;
+  min-width: 50px !important;
+  background-color: #3959b3 !important;
+}
+
+.react-chatbot-kit-user-chat-message {
+  max-width: 80% !important;
+  word-wrap: break-word !important;
+  width: fit-content !important;
+  color: #000000 !important;
+  background-color: #eaeaea !important;
+  font-weight: 750 !important;
+}
+
+/* 챗봇 메시지 컨테이너 왼쪽 정렬 */
+.react-chatbot-kit-chat-bot-message-container {
+  display: flex;
+  justify-content: flex-start !important;
+  margin-left: 0 !important;
+}
+
+/* 챗봇 메시지 왼쪽 정렬 */
+.react-chatbot-kit-chat-bot-message {
+  margin-left: 0 !important;
+  margin-right: auto !important;
+}
+
+/* 챗봇 메시지 화살표 위치 조정 */
+.react-chatbot-kit-chat-bot-message-arrow {
+  left: -8px !important;
+  right: auto !important;
+  border-width: 8px 8px 8px 0 !important;
+  border-color: transparent #376b7e transparent transparent !important;
+}
+
+/* 더 구체적인 선택자 사용 */
+.react-chatbot-kit-chat-message-container
+  .react-chatbot-kit-chat-bot-message-arrow {
+  left: -8px !important;
+  right: auto !important;
+  border-width: 8px 8px 8px 0 !important;
+  border-color: transparent #3959b3 transparent transparent !important;
+}
+
+/* 반응형 스타일 추가 */
+@media screen and (max-width: 1200px) {
+  .chat-wrapper {
+    width: 70%;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .back {
+    padding-top: 0;
+  }
+
+  .chat-wrapper {
+    width: 100%;
+    height: 100vh;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+  }
+
+  .react-chatbot-kit-chat-message-container {
+    padding-top: 60px !important;
+    /* 스크롤바 숨기기 */
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+
+  /* Chrome, Safari, Opera에서 스크롤바 숨기기 */
+  .react-chatbot-kit-chat-message-container::-webkit-scrollbar {
+    display: none;
+  }
+
+  .react-chatbot-kit-chat-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1;
+    background: white;
+  }
+
+  .react-chatbot-kit-chat-message-container {
+    padding: 15px;
+  }
+
+  .react-chatbot-kit-chat-input-container {
+    padding: 10px !important;
+  }
+
+  .react-chatbot-kit-chat-input-container {
+    padding: 12px 0 !important;
+    min-height: 70px;
+  }
+
+  .react-chatbot-kit-chat-input {
+    height: 48px !important;
+    font-size: 15px;
+  }
+
+  .react-chatbot-kit-chat-btn-send {
+    height: 48px !important;
+    width: 85px !important;
+  }
+
+  .react-chatbot-kit-chat-header {
+    padding: 10px;
+    font-size: 1rem;
+  }
+
+  .react-chatbot-kit-chat-bot-avatar {
+    width: 35px;
+    height: 35px;
+    margin-right: 10px;
+  }
+
+  .react-chatbot-kit-chat-message-container {
+    height: calc(100% - 100px) !important;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .chat-wrapper {
+    width: 100%;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    height: 100vh;
+    margin: 0;
+  }
+
+  .react-chatbot-kit-chat-message-container {
+    padding: 10px;
+  }
+
+  .react-chatbot-kit-chat-bot-message,
+  .react-chatbot-kit-user-chat-message {
+    max-width: 85% !important;
+  }
+
+  .react-chatbot-kit-chat-input {
+    height: 42px !important;
+    margin: 0 8px !important;
+  }
+
+  .react-chatbot-kit-chat-btn-send {
+    height: 42px !important;
+    width: 75px !important;
+  }
+
+  .react-chatbot-kit-chat-input-container {
+    padding: 10px !important;
+    min-height: 70px;
+  }
+}
+
+/* 기존 CSS에 추가 */
+.react-chatbot-kit-chat-bot-message.loading {
+  background-color: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.react-chatbot-kit-chat-bot-message.loading
+  .react-chatbot-kit-chat-bot-message-arrow {
+  display: none !important;
+}
+
+/* @keyframes loadingBounce {
+  0%,
+  80%,
+  100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+} */
+
+.loading-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+}
+
+.loading-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #3959b3;
+  border-radius: 50%;
+  animation: loadingBounce 1.4s infinite ease-in-out both;
+}
+
+#dot1 {
+  animation-delay: 0s;
+}
+
+#dot2 {
+  animation-delay: 0.1s;
+}
+
+#dot3 {
+  animation-delay: 0.2s;
+}
