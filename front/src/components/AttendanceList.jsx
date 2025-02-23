@@ -80,6 +80,21 @@ const AttendanceList = () => {
     });
   });
 
+  // 엑셀 다운로드를 위한 전체 출석 데이터 가져오기
+  const getAllAttendanceData = useSelector(state => {
+    return state.attendance.attendanceList
+      .filter(a => a.companyId === Number(companyId))
+      .map(record => {
+        const exerciseType = record.exerciseType.toLowerCase();
+        const limit = company?.limits?.[exerciseType]?.daily || 0;
+        return {
+          ...record,
+          limit
+        };
+      })
+      .sort((a, b) => new Date(b.date) - new Date(a.date));
+  });
+
   const styles = {
     container: {
       marginTop: "64px",
@@ -146,45 +161,77 @@ const AttendanceList = () => {
     };
   };
 
+  // 단일 출석 기록 삭제 처리
   const handleDelete = (recordId) => {
     if (window.confirm('이 출석 기록을 삭제하시겠습니까?')) {
-      dispatch(deleteAttendance({
-        id: recordId,
-        companyId: Number(companyId)
-      }));
+      console.log('Deleting record:', recordId); // 디버깅용
+      dispatch(deleteAttendance(recordId));
     }
   };
 
+  // 엑셀 다운로드 처리
   const handleExcelDownload = () => {
-    const start = new Date(excelDateRange.startDate);
-    const end = new Date(excelDateRange.endDate);
-    end.setHours(23, 59, 59);
+    const startDate = new Date(excelDateRange.startDate);
+    const endDate = new Date(excelDateRange.endDate);
+    endDate.setHours(23, 59, 59);
 
-    const filteredRecords = attendanceByDate.filter(record => {
+    // 선택된 기간의 데이터 필터링
+    const filteredData = getAllAttendanceData.filter(record => {
       const recordDate = new Date(record.date);
-      return recordDate >= start && recordDate <= end;
+      return recordDate >= startDate && recordDate <= endDate;
     });
 
-    const excelData = filteredRecords.map(record => ({
-      날짜: record.date,
-      시간: record.time,
-      이름: record.memberName,
-      전화번호: record.phoneNumber,
-      운동종류: record.exerciseType,
-      상태: record.isExceeded 
-        ? `초과 (${record.limit}명/${record.totalCount}명)`
-        : `${record.limit}명/${record.totalCount}명`
+    // 엑셀 데이터 포맷팅
+    const excelData = filteredData.map(record => ({
+      '날짜': record.date,
+      '시간': record.time,
+      '이름': record.memberName,
+      '전화번호': record.phoneNumber,
+      '운동종류': record.exerciseType,
+      '상태': record.totalCount > record.limit ? 
+        `초과 (${record.limit}명/${record.totalCount}명)` : 
+        `${record.limit}명/${record.totalCount}명`
     }));
 
+    // 워크북 생성
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(excelData);
-    ws['!cols'] = [
-      { wch: 15 }, { wch: 10 }, { wch: 15 }, 
-      { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 }
+
+    // 열 너비 설정
+    const columnWidths = [
+      { wch: 15 },  // 날짜
+      { wch: 10 },  // 시간
+      { wch: 12 },  // 이름
+      { wch: 15 },  // 전화번호
+      { wch: 10 },  // 운동종류
+      { wch: 20 }   // 상태
     ];
+    ws['!cols'] = columnWidths;
+
+    // 스타일 적용
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    for (let R = range.s.r; R <= range.e.r; ++R) {
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const cell_address = { c: C, r: R };
+        const cell_ref = XLSX.utils.encode_cell(cell_address);
+        if (!ws[cell_ref]) continue;
+        
+        if (R === 0) {
+          ws[cell_ref].s = {
+            font: { bold: true },
+            alignment: { horizontal: 'center' },
+            fill: { fgColor: { rgb: "E6E6E6" } }
+          };
+        } else {
+          ws[cell_ref].s = {
+            alignment: { horizontal: 'center' }
+          };
+        }
+      }
+    }
 
     XLSX.utils.book_append_sheet(wb, ws, "출석기록");
-    XLSX.writeFile(wb, `${company.name}_출석기록_${excelDateRange.startDate}_${excelDateRange.endDate}.xlsx`);
+    XLSX.writeFile(wb, `${company?.name}_출석기록_${excelDateRange.startDate}_${excelDateRange.endDate}.xlsx`);
   };
 
   if (!company) {
@@ -241,7 +288,7 @@ const AttendanceList = () => {
 
               {/* 엑셀 다운로드 */}
               <div className="flex items-center justify-center bg-gray-50 rounded-lg p-4 col-span-2">
-                <span className="text-sm text-gray-600 mr-2">엑셀 다운로드:</span>
+                <span className="text-sm text-gray-600 mr-2">엑셀 다운로드 기간:</span>
                 <input
                   type="date"
                   value={excelDateRange.startDate}
@@ -265,7 +312,7 @@ const AttendanceList = () => {
                   onClick={handleExcelDownload}
                   className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
                 >
-                  다운로드
+                  엑셀 다운로드
                 </button>
               </div>
 
@@ -294,6 +341,9 @@ const AttendanceList = () => {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      날짜
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       시간
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -318,6 +368,9 @@ const AttendanceList = () => {
                     <tr key={record.id} className={`hover:bg-gray-50 ${
                       record.isExceeded ? 'bg-red-50' : ''
                     }`}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {record.date}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {record.time}
                       </td>

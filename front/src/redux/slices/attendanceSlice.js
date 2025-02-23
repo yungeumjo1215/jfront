@@ -39,10 +39,8 @@ const attendanceSlice = createSlice({
       localStorage.setItem('attendance', JSON.stringify(state.attendanceList));
     },
     deleteAttendance: (state, action) => {
-      state.attendanceList = state.attendanceList.filter(record => 
-        !(record.id === action.payload.id && 
-          record.companyId === action.payload.companyId)
-      );
+      console.log('Deleting attendance with ID:', action.payload); // 디버깅용
+      state.attendanceList = state.attendanceList.filter(record => record.id !== action.payload);
       localStorage.setItem('attendance', JSON.stringify(state.attendanceList));
     }
   },
