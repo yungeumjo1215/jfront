@@ -24,14 +24,22 @@ const AttendanceCheck = () => {
     state.companies.companies.find(c => c.id === parseInt(companyId))
   );
 
-  // 오늘 출석 수 계산
+  // 오늘 운동 종류별 출석 수 계산
   const todayAttendance = useSelector(state => {
     const today = new Date().toLocaleDateString();
-    return state.attendance.attendanceList.filter(a => 
+    const attendanceList = state.attendance.attendanceList.filter(a => 
       a.companyId === parseInt(companyId) && a.date === today
-    ).length;
+    );
+
+    return {
+      health: attendanceList.filter(a => a.exerciseType === "헬스").length,
+      golf: attendanceList.filter(a => a.exerciseType === "골프").length
+    };
   });
-  
+
+  // 선택 가능한 운동 종류
+  const availableExercises = company?.exerciseTypes || { health: true, golf: true };
+
   // 전화번호 입력 시 일치하는 회원들 찾기
   const handlePhoneChange = (value) => {
     setPhoneLastDigits(value);
@@ -65,13 +73,26 @@ const AttendanceCheck = () => {
       return;
     }
 
+    // 운동 종류 체크
+    const isHealth = exerciseType === "헬스";
+    const isGolf = exerciseType === "골프";
+
+    if ((isHealth && !availableExercises.health) || 
+        (isGolf && !availableExercises.golf)) {
+      setMessage("선택할 수 없는 운동 종류입니다.");
+      return;
+    }
+
     // 일일 제한 체크
-    if (company.dailyLimit > 0 && todayAttendance >= company.dailyLimit) {
-      if (!company.allowExceed) {
-        setMessage(`일일 출석 제한(${company.dailyLimit}명)을 초과했습니다.`);
+    const limit = isHealth ? company.limits?.health : company.limits?.golf;
+    const currentCount = isHealth ? todayAttendance.health : todayAttendance.golf;
+
+    if (limit && limit.daily > 0 && currentCount >= limit.daily) {
+      if (!limit.allowExceed) {
+        setMessage(`${exerciseType} 일일 출석 제한(${limit.daily}명)을 초과했습니다.`);
         return;
       } else {
-        if (!window.confirm(`일일 출석 제한(${company.dailyLimit}명)을 초과했습니다. 계속하시겠습니까?`)) {
+        if (!window.confirm(`${exerciseType} 일일 출석 제한(${limit.daily}명)을 초과했습니다. 계속하시겠습니까?`)) {
           return;
         }
       }
@@ -106,41 +127,61 @@ const AttendanceCheck = () => {
         <h2 className="text-2xl font-bold text-center mb-6">출석체크</h2>
         
         {/* 일일 출석 현황 표시 */}
-        {company?.dailyLimit > 0 && (
-          <div className="mb-4 text-center">
-            <p className={`text-sm ${todayAttendance >= company.dailyLimit ? 'text-red-600' : 'text-gray-600'}`}>
-              오늘 출석: {todayAttendance} / {company.dailyLimit}명
-              {company.allowExceed && todayAttendance >= company.dailyLimit && 
-                " (초과 허용)"
-              }
+        <div className="mb-4 space-y-2">
+          {availableExercises.health && company?.limits?.health?.daily > 0 && (
+            <p className={`text-sm ${
+              todayAttendance.health >= company.limits.health.daily 
+                ? 'text-red-600' 
+                : 'text-gray-600'
+            }`}>
+              헬스 출석: {todayAttendance.health} / {company.limits.health.daily}명
+              {company.limits.health.allowExceed && 
+               todayAttendance.health >= company.limits.health.daily && 
+               " (초과 허용)"}
             </p>
-          </div>
-        )}
+          )}
+          {availableExercises.golf && company?.limits?.golf?.daily > 0 && (
+            <p className={`text-sm ${
+              todayAttendance.golf >= company.limits.golf.daily 
+                ? 'text-red-600' 
+                : 'text-gray-600'
+            }`}>
+              골프 출석: {todayAttendance.golf} / {company.limits.golf.daily}명
+              {company.limits.golf.allowExceed && 
+               todayAttendance.golf >= company.limits.golf.daily && 
+               " (초과 허용)"}
+            </p>
+          )}
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-gray-700 mb-2">운동 종류</label>
             <div className="flex gap-4">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  value="헬스"
-                  checked={exerciseType === "헬스"}
-                  onChange={(e) => setExerciseType(e.target.value)}
-                  className="mr-2"
-                />
-                헬스
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  value="골프"
-                  checked={exerciseType === "골프"}
-                  onChange={(e) => setExerciseType(e.target.value)}
-                  className="mr-2"
-                />
-                골프
-              </label>
+              {availableExercises.health && (
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    value="헬스"
+                    checked={exerciseType === "헬스"}
+                    onChange={(e) => setExerciseType(e.target.value)}
+                    className="mr-2"
+                  />
+                  헬스
+                </label>
+              )}
+              {availableExercises.golf && (
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    value="골프"
+                    checked={exerciseType === "골프"}
+                    onChange={(e) => setExerciseType(e.target.value)}
+                    className="mr-2"
+                  />
+                  골프
+                </label>
+              )}
             </div>
           </div>
 
