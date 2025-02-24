@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from 'react-redux';
 import "./ImageSlider.css";
 import { addCompany, deleteCompany } from '../redux/slices/companySlice';
+import { login, logout } from '../redux/slices/authSlice';
 
 const Home = () => {
   const [selectedCompany, setSelectedCompany] = useState(null);
@@ -10,9 +11,13 @@ const Home = () => {
   const [newCompany, setNewCompany] = useState({ name: "", logo: "" });
   const [previewImage, setPreviewImage] = useState(null);
   const [logoType, setLogoType] = useState('url');
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const companies = useSelector((state) => state.companies.companies);
+  const isAdmin = useSelector(state => state.auth.isAdmin);
 
   const handleCompanyClick = (companyId) => {
     setSelectedCompany(selectedCompany === companyId ? null : companyId);
@@ -83,6 +88,17 @@ const Home = () => {
     navigate(`/edit-company/${company.id}`);
   };
 
+  const handleLogin = () => {
+    if (password === '3131') {
+      dispatch(login());
+      setShowLoginModal(false);
+      setPassword('');
+      setLoginError('');
+    } else {
+      setLoginError('비밀번호가 올바르지 않습니다.');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 py-12 px-4 pt-20">
       <div className="max-w-7xl mx-auto">
@@ -90,12 +106,31 @@ const Home = () => {
           <h1 className="text-4xl font-bold text-gray-800">
             헬스보이짐 여의도역점
           </h1>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            기업 추가
-          </button>
+          <div className="flex gap-4">
+            {isAdmin ? (
+              <>
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  기업 추가
+                </button>
+                <button
+                  onClick={() => dispatch(logout())}
+                  className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  회원 모드
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setShowLoginModal(true)}
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                관리자 모드
+              </button>
+            )}
+          </div>
         </div>
         
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -136,39 +171,52 @@ const Home = () => {
                     >
                       출석체크
                     </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/company/${company.id}/members`);
-                      }}
-                      className="w-full py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
-                    >
-                      회원 목록
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/register/${company.id}`);
-                      }}
-                      className="w-full py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 transition-colors"
-                    >
-                      회원 등록
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/edit-company/${company.id}`);
-                      }}
-                      className="w-full py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 transition-colors"
-                    >
-                      수정
-                    </button>
-                    <button
-                      onClick={(e) => handleDeleteClick(e, company.id)}
-                      className="w-full py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
-                    >
-                      삭제
-                    </button>
+                    {isAdmin && (
+                      <>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/company/${company.id}/members`);
+                          }}
+                          className="w-full py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
+                        >
+                          회원 목록
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/company/${company.id}/attendance`);
+                          }}
+                          className="w-full py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 transition-colors"
+                        >
+                          출석목록
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/register/${company.id}`);
+                          }}
+                          className="w-full py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 transition-colors"
+                        >
+                          회원 등록
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/edit-company/${company.id}`);
+                          }}
+                          className="w-full py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 transition-colors"
+                        >
+                          수정
+                        </button>
+                        <button
+                          onClick={(e) => handleDeleteClick(e, company.id)}
+                          className="w-full py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
+                        >
+                          삭제
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               )}
@@ -277,6 +325,45 @@ const Home = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* 관리자 로그인 모달 */}
+        {showLoginModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg p-8 max-w-md w-full">
+              <h2 className="text-2xl font-bold mb-4">관리자 로그인</h2>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                placeholder="비밀번호를 입력하세요"
+                className="w-full border rounded px-3 py-2 mb-4"
+                autoFocus
+              />
+              {loginError && (
+                <p className="text-red-500 text-sm mb-4">{loginError}</p>
+              )}
+              <div className="flex justify-end gap-4">
+                <button
+                  onClick={() => {
+                    setShowLoginModal(false);
+                    setPassword('');
+                    setLoginError('');
+                  }}
+                  className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleLogin}
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                >
+                  로그인
+                </button>
+              </div>
             </div>
           </div>
         )}

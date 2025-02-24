@@ -121,6 +121,8 @@ const AttendanceCheck = () => {
     }
   };
 
+  const isAdmin = useSelector(state => state.auth.isAdmin);
+
   return (
     <div className="min-h-screen bg-gray-100 py-12 px-4 pt-20">
       <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
@@ -235,13 +237,15 @@ const AttendanceCheck = () => {
             >
               출석체크
             </button>
-            <button
-              type="button"
-              onClick={() => navigate(`/company/${companyId}/attendance`)}
-              className="px-6 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-            >
-              출석목록
-            </button>
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => navigate(`/company/${companyId}/attendance`)}
+                className="px-6 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+              >
+                출석목록
+              </button>
+            )}
             <button
               type="button"
               onClick={() => navigate('/')}
